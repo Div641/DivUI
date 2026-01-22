@@ -83,3 +83,19 @@ nav .grid{
 .resize-handle.ne { top: -6px; right: -6px; cursor: nesw-resize; }
 .resize-handle.sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
 .resize-handle.se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+
+.rotate-handle {
+  width: 12px;
+  height: 12px;
+  background: #2563eb;
+  background-image: url("/images/rotate.png");
+  background-size: cover;        
+  background-position: center;   
+  background-repeat: no-repeat; 
+  border-radius: 50%;
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: grab;
+}
