@@ -48,7 +48,38 @@ nav .grid{
 .total{
     height: 92%;
     display: grid;
-    /* grid-template-columns: 20% 65% 15%; */
-    background-color: var(--canvas-bg); 
+    grid-template-columns: 20% 60% 20%;
+    background-color: var(--bg); 
+    
 }
 
+.total > div{
+    border: 1px solid var(--border);
+    /* margin: 10px; */
+    /* border-radius: 5px; */
+    background-color: var(--canvas-bg);
+}
+
+.canvas{
+    overflow: hidden;
+    position: relative;
+}
+
+.canvas-element.selected {
+  outline: 2px solid #2563eb; /* blue selection */
+}
+
+
+.resize-handle {
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border: 1.5px solid #2563eb;
+  position: absolute;
+  z-index: 10;
+}
+
+.resize-handle.nw { top: -6px; left: -6px; cursor: nwse-resize; }
+.resize-handle.ne { top: -6px; right: -6px; cursor: nesw-resize; }
+.resize-handle.sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+.resize-handle.se { bottom: -6px; right: -6px; cursor: nwse-resize; }
