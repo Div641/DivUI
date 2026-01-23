@@ -70,6 +70,45 @@ nav .grid{
     /* box-shadow: var(--shadow-m); */
 }
 
+.properties {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    justify-content: space-between;
+
+}
+
+input[type="text"], input[type="number"]{
+    width: 35%;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: var(--shadow-s);
+    margin: 5px 0px;
+    
+}
+
+ input[type="color"] {
+    width: 40px;
+    height: 25px;
+    padding: 0;
+    border: none;
+    border-radius:4px ;
+    margin: 5px 0px;
+    cursor: pointer;
+  }
+
+
+  .properties button {
+    font-size: 12px;
+    font-weight: 540;
+    padding: 2px 4px;
+    margin: 4px 0px;
+    border: none;
+    box-shadow: var(--shadow-s);
+  }
+
+
 .layer-item {
     height: 29px;
     width: 120px;

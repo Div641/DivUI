@@ -6,8 +6,6 @@
     <title>DivUI</title>
     <link rel="icon" type="image/png" sizes="32*32" href="images\favicon.png">
     <link rel="stylesheet" href="styles/theme.css"> <!--  colors k liye -->
-    <link rel="stylesheet" href="styles/base.css">  <!--  font aur box sizing k liye -->
-    <link rel="stylesheet" href="styles/layout.css"> <!--  layout(panel,grid,navbar) k liye -->
     <link rel="stylesheet" href="styles/components.css"> <!--  main basic ui isme banaya hai -->
     <link
     href="https://cdn.jsdelivr.net/npm/remixicon@4.8.0/fonts/remixicon.css"
@@ -56,7 +54,8 @@
 
 
             <div class="properties">
-                <h3>Properties</h3>
+                <div class="view">
+                    <h3>Properties</h3>
                 <h4 id="prop-heading">No element selected</h4>
 
                 <div class="pNames">
@@ -75,11 +74,21 @@
                     <h6>TextColor</h6>
                     <input value="" type="color">
                 </div>
+                </div>
+
+                <div class="export-fn">
+                    <button onclick="exportAsJSON()">Export JSON</button>
+                    <button onclick="exportAsHTML()">Export HTML</button>
+                </div>
             </div>
 
         </div>
+
+        
     </main>
 
-    <script type="module" src="main.js"></script>
+    
+
+    <script src="main.js"></script>
 </body>
 </html>

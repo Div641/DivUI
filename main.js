@@ -2,6 +2,7 @@ let elementCount = 0;
 let selectedElement = null;
 let layers = [];
 const KEY_MOVE_STEP = 5;
+const STORAGE_KEY = "canvas-layout";
 
 
 // default values
@@ -157,7 +158,34 @@ function createShape(type) {
   updateZIndices?.();
   renderLayers();
   selectElement(el);
+  saveLayout();
+
 }
+
+//local storage mai jo jo create ho ,save karte jaayenge
+function saveLayout() {
+  const layout = layers.map(el => ({
+    id: el.id,
+    type: [...el.classList].find(c => c !== "canvas-element"),
+    left: el.offsetLeft,
+    top: el.offsetTop,
+    width: el.offsetWidth,
+    height: el.offsetHeight,
+    backgroundColor: el.style.backgroundColor,
+    color: el.style.color,
+    rotation: el.dataset.rotation || 0,
+    text: el.classList.contains("text") ? el.textContent : null,
+    styles: {
+      border: el.style.border,
+      borderRadius: el.style.borderRadius,
+      fontSize: el.style.fontSize,
+      padding: el.style.padding
+    }
+  }));
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
+}
+
 
 let updateZIndices;
 // ===== .box k <i> tag ko click karne par vo specific shape bann jaayega =====
@@ -176,22 +204,26 @@ const [heightInput, widthInput, bgInput, textColorInput] =
 heightInput.addEventListener("input", () => {
   if (selectedElement)
     selectedElement.style.height = heightInput.value + "px";
+    saveLayout();
 });
 
 widthInput.addEventListener("input", () => {
   if (selectedElement)
     selectedElement.style.width = widthInput.value + "px";
+    saveLayout();
 });
 
 bgInput.addEventListener("input", () => {
   if (!selectedElement || selectedElement.classList.contains("line")) return;
   selectedElement.style.backgroundColor = bgInput.value;
   selectedElement.dataset.fill = bgInput.value;
+  saveLayout();
 });
 
 textColorInput.addEventListener("input", () => {
   if (selectedElement)
     selectedElement.style.color = textColorInput.value;
+    saveLayout();
 });
 
 
@@ -278,6 +310,8 @@ document.addEventListener("mousemove", e => {
     selectedElement.style.left = left + "px";
     selectedElement.style.top = top + "px";
     updatePropertiesPanel(selectedElement);
+    saveLayout();
+
   }
 
   if (isResizing && selectedElement) {
@@ -327,6 +361,7 @@ document.addEventListener("mouseup", () => {
   isResizing = false;
   isRotating = false;
   resizeHandle = null;
+  saveLayout();
 });
 
 
@@ -581,7 +616,9 @@ document.addEventListener("keydown", e => {
   selectedElement.style.left = left + "px";
   selectedElement.style.top = top + "px";
 
+
   updatePropertiesPanel(selectedElement);
+  saveLayout();
 });
 
 function deleteSelectedElement() {
@@ -600,4 +637,156 @@ function deleteSelectedElement() {
   renderLayers();
   highlightLayer(null);
   updatePropertiesPanel(null);
+  saveLayout();
+
+}
+
+function loadLayout() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return;
+
+  const layout = JSON.parse(saved);
+
+  canvas.innerHTML = "";
+  layers = [];
+  selectedElement = null;
+
+  layout.forEach(data => {
+    elementCount++;
+
+    const el = document.createElement("div");
+    el.classList.add("canvas-element", data.type);
+    el.id = data.id;
+
+    Object.assign(el.style, {
+      position: "absolute",
+      left: data.left + "px",
+      top: data.top + "px",
+      width: data.width + "px",
+      height: data.height + "px",
+      backgroundColor: data.backgroundColor,
+      color: data.color,
+      border: data.styles.border,
+      borderRadius: data.styles.borderRadius,
+      fontSize: data.styles.fontSize,
+      padding: data.styles.padding,
+      transform: `rotate(${data.rotation}deg)`
+    });
+
+    el.dataset.rotation = data.rotation;
+
+    if (data.type === "text") {
+      el.textContent = data.text || "";
+      el.contentEditable = "plaintext-only";
+      el.tabIndex = 0;
+    }
+
+    el.addEventListener("click", e => {
+      e.stopPropagation();
+      selectElement(el);
+    });
+
+    canvas.appendChild(el);
+    layers.push(el);
+  });
+
+  renderLayers();
+  elementCount = layers.length;
+
+}
+window.addEventListener("DOMContentLoaded", loadLayout);
+
+//==============Export Functionss ===============
+
+function exportAsJSON() {
+  const layout = layers.map(el => ({
+    id: el.id,
+    type: [...el.classList].find(c => c !== "canvas-element"),
+    left: el.offsetLeft,
+    top: el.offsetTop,
+    width: el.offsetWidth,
+    height: el.offsetHeight,
+    backgroundColor: el.style.backgroundColor,
+    color: el.style.color,
+    rotation: el.dataset.rotation || 0,
+    text: el.classList.contains("text") ? el.textContent : null,
+    styles: {
+      border: el.style.border,
+      borderRadius: el.style.borderRadius,
+      fontSize: el.style.fontSize,
+      padding: el.style.padding
+    }
+  }));
+
+  const blob = new Blob(
+    [JSON.stringify(layout, null, 2)],
+    { type: "application/json" }
+  );
+
+  downloadFile(blob, "design.json");
+}
+
+
+
+function exportAsHTML() {
+  const elementsHTML = layers.map(el => {
+    const styles = `
+      position:absolute;
+      left:${el.offsetLeft}px;
+      top:${el.offsetTop}px;
+      width:${el.offsetWidth}px;
+      height:${el.offsetHeight}px;
+      background:${el.style.backgroundColor};
+      color:${el.style.color};
+      border:${el.style.border};
+      border-radius:${el.style.borderRadius};
+      font-size:${el.style.fontSize};
+      padding:${el.style.padding};
+      transform:rotate(${el.dataset.rotation || 0}deg);
+      box-sizing:border-box;
+    `;
+
+    if (el.classList.contains("text")) {
+      return `<div style="${styles}">${el.textContent}</div>`;
+    }
+
+    return `<div style="${styles}"></div>`;
+  }).join("\n");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Exported Design</title>
+</head>
+<body style="margin:0; position:relative;">
+  <div style="
+    position:relative;
+    width:${canvas.clientWidth}px;
+    height:${canvas.clientHeight}px;
+    border:1px solid #ccc;
+  ">
+    ${elementsHTML}
+  </div>
+</body>
+</html>
+  `;
+
+  const blob = new Blob([html], { type: "text/html" });
+  downloadFile(blob, "design.html");
+}
+
+
+function downloadFile(blob, filename) {
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
