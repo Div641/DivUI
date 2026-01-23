@@ -1,6 +1,7 @@
 let elementCount = 0;
 let selectedElement = null;
 let layers = [];
+const KEY_MOVE_STEP = 5;
 
 
 // default values
@@ -522,3 +523,81 @@ function updatePropertiesPanel(el) {
   }
 }
 
+//=============Keyboard Interactions =============================
+
+
+document.addEventListener("keydown", e => {
+  if (!selectedElement) return;
+
+  const canvasRect = canvas.getBoundingClientRect();
+  const elRect = selectedElement.getBoundingClientRect();
+
+  let left = selectedElement.offsetLeft;
+  let top = selectedElement.offsetTop;
+  let moved = false;
+
+  switch (e.key) {
+    case "Delete":
+      e.preventDefault();
+      deleteSelectedElement();
+      return;
+
+    case "ArrowUp":
+      top -= KEY_MOVE_STEP;
+      moved = true;
+      break;
+
+    case "ArrowDown":
+      top += KEY_MOVE_STEP;
+      moved = true;
+      break;
+
+    case "ArrowLeft":
+      left -= KEY_MOVE_STEP;
+      moved = true;
+      break;
+
+    case "ArrowRight":
+      left += KEY_MOVE_STEP;
+      moved = true;
+      break;
+  }
+
+  if (!moved) return;
+
+  e.preventDefault();
+
+  // boundary clamp
+  left = Math.max(
+    0,
+    Math.min(left, canvas.clientWidth - selectedElement.offsetWidth)
+  );
+
+  top = Math.max(
+    0,
+    Math.min(top, canvas.clientHeight - selectedElement.offsetHeight)
+  );
+
+  selectedElement.style.left = left + "px";
+  selectedElement.style.top = top + "px";
+
+  updatePropertiesPanel(selectedElement);
+});
+
+function deleteSelectedElement() {
+  if (!selectedElement) return;
+
+  const el = selectedElement;
+
+  // remove from DOM
+  el.remove();
+
+  // remove from layers array
+  layers = layers.filter(layer => layer !== el);
+
+  // clear selection
+  selectedElement = null;
+  renderLayers();
+  highlightLayer(null);
+  updatePropertiesPanel(null);
+}
