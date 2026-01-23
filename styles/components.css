@@ -23,8 +23,8 @@ nav{
     justify-content: space-between;
     height: 8%;
     padding: 10px 20px;
-    background-color: var(--bg);
-    border-bottom: 1px solid var(--border);
+    background-color: var(--pri);
+    border-bottom: 1px solid var(--pri2);
 }
 
 
@@ -33,33 +33,94 @@ nav{
     align-items: center;
     justify-content: center;
     gap: 15px;
+    box-shadow: var(--shadow-s);
     /* background-color: var(--panel); */
    
 }
 
 nav .grid{
-    border: 1px solid var(--border);
+    border: 1px solid var(--pri2);
     margin: 10px;
     padding: 7px;
-    border-radius: 5px;
-    background-color: var(--panel);
+    border-radius: 19px;
+    background-color: var(--sec);
+    box-shadow: var(--shadow-s);
 }
 
 .total{
     height: 92%;
     display: grid;
     grid-template-columns: 20% 60% 20%;
-    background-color: var(--bg); 
+    background-color: var(--pri); 
     
 }
 
 .total > div{
-    border: 1px solid var(--border);
+    border: 1px solid var(--text);
     /* margin: 10px; */
     /* border-radius: 5px; */
     background-color: var(--canvas-bg);
 }
 
+.total .layers , .total .properties{
+    padding: 10px;
+    height: 100%;
+    overflow-y: auto;
+    background-color: var(--pri2);
+    /* box-shadow: var(--shadow-m); */
+}
+
+.layer-item {
+    height: 29px;
+    width: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    margin: 8px;
+    font-size: 10px;
+    background: #f4f4f4;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.layer-item:hover {
+  background: #eaeaea;
+}
+
+/* selected layer */
+.layer-item.active {
+  background: #dbeafe;
+  border-left: 3px solid #2563eb;
+}
+
+/* buttons inside layer */
+.layer-item button {
+  margin-left: 4px;
+  font-size: 11px;
+  padding: 2px 4px;
+  border: none;
+  background: #ddd;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.layer-item button:hover {
+  background: #ccc;
+}
+
+.layer-item button:active {
+  scale:0.97;
+}
+
+.total h3{
+    margin: 8px ;
+    padding: 10px;
+    border: 2px solid var(--text);
+    border-radius: 5px;
+    box-shadow: var(--shadow-m);
+
+}
 .canvas{
     overflow: hidden;
     position: relative;
@@ -99,3 +160,5 @@ nav .grid{
   transform: translateX(-50%);
   cursor: grab;
 }
+
+

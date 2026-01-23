@@ -1,6 +1,7 @@
-
 let elementCount = 0;
 let selectedElement = null;
+let layers = [];
+
 
 // default values
 const DEFAULTS = {
@@ -11,8 +12,8 @@ const DEFAULTS = {
   border: "#333"
 };
 
-
 const canvas = document.querySelector(".canvas");
+
 
 // ===== SELECTION =====
 function clearSelection() {
@@ -22,9 +23,19 @@ function clearSelection() {
   removeResizeHandles(selectedElement);
   removeRotationHandle(selectedElement);
   selectedElement = null;
+  highlightLayer(null);
+  // updatePropertiesPanel(null);
+
 }
 
 function selectElement(el) {
+  if (!layers.includes(el)) {
+    layers.push(el);
+    renderLayers();
+    updatePropertiesPanel(el);
+
+  }
+
   if (selectedElement === el) return;
 
   clearSelection();
@@ -32,6 +43,9 @@ function selectElement(el) {
   el.classList.add("selected");
   addResizeHandles(el);
   addRotationHandle(el);
+  highlightLayer(el);
+  updatePropertiesPanel(el);
+
 }
 
 function removeRotationHandle(el) {
@@ -42,23 +56,19 @@ function removeRotationHandle(el) {
 
 // deselect when clicking empty canvas
 canvas.addEventListener("click", e => {
-  if (e.target === canvas) {
-    clearSelection();
-  }
+  if (e.target === canvas) clearSelection();
 });
+
 
 // ===== Resizing =====
 function addResizeHandles(el) {
-  const positions = ["nw", "ne", "sw", "se"];
-
-  positions.forEach(pos => {
+  ["nw", "ne", "sw", "se"].forEach(pos => {
     const handle = document.createElement("div");
-    handle.classList.add("resize-handle", pos);
+    handle.className = `resize-handle ${pos}`;
     handle.dataset.position = pos;
 
     // stop canvas deselect
     handle.addEventListener("click", e => e.stopPropagation());
-
     el.appendChild(handle);
   });
 }
@@ -78,26 +88,24 @@ function createShape(type) {
 
   // base styles
   //ye same getBoundingClientRect() se bhi ho skta hai,vo direct object deta hai in values ka
-
-  el.style.position = "absolute";
-  el.style.left = DEFAULTS.x + elementCount * 10 + "px";
-  el.style.top = DEFAULTS.y + elementCount * 10 + "px";
-  el.style.width = DEFAULTS.width + "px";
-  el.style.height = DEFAULTS.height + "px";
-
-  el.style.backgroundColor = "transparent";
-  el.style.border = `2px solid ${DEFAULTS.border}`;
-  el.style.boxSizing = "border-box";
-  el.style.cursor = "pointer";
+  Object.assign(el.style, {
+    position: "absolute",
+    left: DEFAULTS.x + elementCount * 10 + "px",
+    top: DEFAULTS.y + elementCount * 10 + "px",
+    width: DEFAULTS.width + "px",
+    height: DEFAULTS.height + "px",
+    backgroundColor: "transparent",
+    border: `2px solid ${DEFAULTS.border}`,
+    boxSizing: "border-box",
+    cursor: "pointer"
+  });
 
   // save state
   el.dataset.fill = "transparent";
   el.dataset.border = DEFAULTS.border;
 
   // type-specific styles
-  if (type === "circle") {
-    el.style.borderRadius = "50%";
-  }
+  if (type === "circle") el.style.borderRadius = "50%";
 
   if (type === "line") {
     el.style.height = "4px";
@@ -109,15 +117,28 @@ function createShape(type) {
     el.textContent = "Edit text";
     el.contentEditable = "plaintext-only"; //  better editor behavior
     el.tabIndex = 0;                       //  allows focus
-
     el.spellcheck = false;
 
-    el.style.border = "1px dashed #666";
-    el.style.backgroundColor = "transparent";
-    el.style.color = "#111";
-    el.style.fontSize = "18px";
-    el.style.padding = "4px";
-    el.style.cursor = "text";
+    Object.assign(el.style, {
+      border: "1px dashed #666",
+      backgroundColor: "transparent",
+      color: "#111",
+      fontSize: "18px",
+      padding: "4px",
+      cursor: "text"
+    });
+
+    // double click to edit aur single click se drag hoga
+    el.addEventListener("dblclick", e => {
+      e.stopPropagation();
+      el.contentEditable = "true";
+      el.focus();
+    });
+
+    // click outside → stop editing
+    el.addEventListener("blur", () => {
+      el.contentEditable = "false";
+    });
   }
 
   // click to select
@@ -126,14 +147,18 @@ function createShape(type) {
     selectElement(el);
 
     if (el.classList.contains("text")) {
-    el.focus();       //  cursor + keyboard activation
-  }
+      el.focus();       //  cursor + keyboard activation
+    }
   });
 
   canvas.appendChild(el);
+  layers.push(el);
+  updateZIndices?.();
+  renderLayers();
   selectElement(el);
 }
 
+let updateZIndices;
 // ===== .box k <i> tag ko click karne par vo specific shape bann jaayega =====
 document.querySelectorAll(".elem").forEach(tool => {
   tool.addEventListener("click", () => {
@@ -142,33 +167,32 @@ document.querySelectorAll(".elem").forEach(tool => {
   });
 });
 
-// ===== PROPERTY PANEL =====
-const propInputs = document.querySelectorAll(".properties input");
 
-const [heightInput, widthInput, bgInput, textColorInput] = propInputs;
+// ===== PROPERTY PANEL =====
+const [heightInput, widthInput, bgInput, textColorInput] =
+  document.querySelectorAll(".properties input");
 
 heightInput.addEventListener("input", () => {
-  if (!selectedElement) return;
-  selectedElement.style.height = heightInput.value + "px";
+  if (selectedElement)
+    selectedElement.style.height = heightInput.value + "px";
 });
 
 widthInput.addEventListener("input", () => {
-  if (!selectedElement) return;
-  selectedElement.style.width = widthInput.value + "px";
+  if (selectedElement)
+    selectedElement.style.width = widthInput.value + "px";
 });
 
 bgInput.addEventListener("input", () => {
-  if (!selectedElement) return;
-  if (selectedElement.classList.contains("line")) return;
-
+  if (!selectedElement || selectedElement.classList.contains("line")) return;
   selectedElement.style.backgroundColor = bgInput.value;
   selectedElement.dataset.fill = bgInput.value;
 });
 
 textColorInput.addEventListener("input", () => {
-  if (!selectedElement) return;
-  selectedElement.style.color = textColorInput.value;
+  if (selectedElement)
+    selectedElement.style.color = textColorInput.value;
 });
+
 
 //=====3) Dragging ,Resizing and Rotating=====
 
@@ -177,19 +201,34 @@ let isDragging = false;
 let dragOffsetX = 0;
 let dragOffsetY = 0;
 
+// ================= Resizing =================
+let isResizing = false;
+let resizeHandle = null;
+let startX, startY, startWidth, startHeight, startLeft, startTop;
+const MIN_SIZE = 20;
+
+// ================= ROTATION =================
+let isRotating = false; 
+let startAngle = 0;
+
+
 canvas.addEventListener("mousedown", e => {
   if (!selectedElement) return;
 
-  // allow typing inside text jo ab dragging se override nhi hoga
-  if (
-    selectedElement.classList.contains("text") &&
-    e.target === selectedElement
-  ) {
-    selectedElement.focus();
+  if (e.target.classList.contains("resize-handle")) {
+    isResizing = true;
+    resizeHandle = e.target.dataset.position;
+
+    startX = e.clientX;
+    startY = e.clientY;
+    startWidth = selectedElement.offsetWidth;
+    startHeight = selectedElement.offsetHeight;
+    startLeft = selectedElement.offsetLeft;
+    startTop = selectedElement.offsetTop;
+
+    e.stopPropagation();
     return;
   }
-
-  if (e.target.classList.contains("resize-handle")) return;
 
   if (e.target === selectedElement) {
     isDragging = true;
@@ -201,93 +240,10 @@ canvas.addEventListener("mousedown", e => {
     dragOffsetY = e.clientY - rect.top;
 
     e.preventDefault();
+    updatePropertiesPanel(selectedElement);
   }
 });
 
-
-document.addEventListener("mousemove", e => {
-  if (!isDragging || !selectedElement) return;
-
-  const canvasRect = canvas.getBoundingClientRect();
-
-  let newLeft = e.clientX - canvasRect.left - dragOffsetX;
-  let newTop = e.clientY - canvasRect.top - dragOffsetY;
-
-  // boundary constraint
-  newLeft = Math.max(0, Math.min(newLeft, canvas.clientWidth - selectedElement.offsetWidth));
-  newTop = Math.max(0, Math.min(newTop, canvas.clientHeight - selectedElement.offsetHeight));
-
-  selectedElement.style.left = newLeft + "px";
-  selectedElement.style.top = newTop + "px";
-});
-
-document.addEventListener("mouseup", () => {
-  isDragging = false;
-});
-
-
-// ================= RESIZING =================
-let isResizing = false;
-let resizeHandle = null;
-let startX, startY, startWidth, startHeight, startLeft, startTop;
-const MIN_SIZE = 20;
-
-canvas.addEventListener("mousedown", e => {
-  if (!e.target.classList.contains("resize-handle")) return;
-
-  isResizing = true;
-  resizeHandle = e.target.dataset.position;
-  startX = e.clientX;
-  startY = e.clientY;
-
-  startWidth = selectedElement.offsetWidth;
-  startHeight = selectedElement.offsetHeight;
-  startLeft = selectedElement.offsetLeft;
-  startTop = selectedElement.offsetTop;
-
-  e.stopPropagation();
-});
-
-document.addEventListener("mousemove", e => {
-  if (!isResizing || !selectedElement) return;
-
-  const dx = e.clientX - startX;
-  const dy = e.clientY - startY;
-
-  if (resizeHandle === "se") {
-    selectedElement.style.width = Math.max(MIN_SIZE, startWidth + dx) + "px";
-    selectedElement.style.height = Math.max(MIN_SIZE, startHeight + dy) + "px";
-  }
-
-  if (resizeHandle === "sw") {
-    selectedElement.style.width = Math.max(MIN_SIZE, startWidth - dx) + "px";
-    selectedElement.style.height = Math.max(MIN_SIZE, startHeight + dy) + "px";
-    selectedElement.style.left = startLeft + dx + "px";
-  }
-
-  if (resizeHandle === "ne") {
-    selectedElement.style.width = Math.max(MIN_SIZE, startWidth + dx) + "px";
-    selectedElement.style.height = Math.max(MIN_SIZE, startHeight - dy) + "px";
-    selectedElement.style.top = startTop + dy + "px";
-  }
-
-  if (resizeHandle === "nw") {
-    selectedElement.style.width = Math.max(MIN_SIZE, startWidth - dx) + "px";
-    selectedElement.style.height = Math.max(MIN_SIZE, startHeight - dy) + "px";
-    selectedElement.style.left = startLeft + dx + "px";
-    selectedElement.style.top = startTop + dy + "px";
-  }
-});
-
-document.addEventListener("mouseup", () => {
-  isResizing = false;
-  resizeHandle = null;
-});
-
-
-// ================= ROTATION =================
-let isRotating = false;
-let startAngle = 0;
 
 function addRotationHandle(el) {
   const rotateHandle = document.createElement("div");
@@ -299,39 +255,77 @@ function addRotationHandle(el) {
     isRotating = true;
 
     const rect = el.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
 
-    const dx = e.clientX - centerX;
-    const dy = e.clientY - centerY;
-    startAngle = Math.atan2(dy, dx) * (180 / Math.PI);
-  });
+    startAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
+
+
+      });
 }
 
+
 document.addEventListener("mousemove", e => {
-  if (!isRotating || !selectedElement) return;
+  if (isDragging && selectedElement) {
+    const canvasRect = canvas.getBoundingClientRect();
+    let left = e.clientX - canvasRect.left - dragOffsetX;
+    let top = e.clientY - canvasRect.top - dragOffsetY;
 
-  const rect = selectedElement.getBoundingClientRect();
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
+    left = Math.max(0, Math.min(left, canvas.clientWidth - selectedElement.offsetWidth));
+    top = Math.max(0, Math.min(top, canvas.clientHeight - selectedElement.offsetHeight));
 
-  const dx = e.clientX - centerX;
-  const dy = e.clientY - centerY;
+    selectedElement.style.left = left + "px";
+    selectedElement.style.top = top + "px";
+    updatePropertiesPanel(selectedElement);
+  }
 
-  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-  const rotation = angle - startAngle;
+  if (isResizing && selectedElement) {
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
 
-  selectedElement.dataset.rotation =
-    (parseFloat(selectedElement.dataset.rotation) || 0) + rotation;
+    if (resizeHandle.includes("e"))
+      selectedElement.style.width = Math.max(MIN_SIZE, startWidth + dx) + "px";
+    if (resizeHandle.includes("s"))
+      selectedElement.style.height = Math.max(MIN_SIZE, startHeight + dy) + "px";
+    if (resizeHandle.includes("w")) {
+      selectedElement.style.width = Math.max(MIN_SIZE, startWidth - dx) + "px";
+      selectedElement.style.left = startLeft + dx + "px";
+    }
+    if (resizeHandle.includes("n")) {
+      selectedElement.style.height = Math.max(MIN_SIZE, startHeight - dy) + "px";
+      selectedElement.style.top = startTop + dy + "px";
+    }
 
-  selectedElement.style.transform =
-    `rotate(${selectedElement.dataset.rotation}deg)`;
+     updatePropertiesPanel(selectedElement);
 
-  startAngle = angle;
+  }
+
+  if (isRotating && selectedElement) {
+    const rect = selectedElement.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+
+    const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
+    const rotation = angle - startAngle;
+
+    selectedElement.dataset.rotation =
+      (parseFloat(selectedElement.dataset.rotation) || 0) + rotation;
+
+    selectedElement.style.transform =
+      `rotate(${selectedElement.dataset.rotation}deg)`;
+
+    startAngle = angle;
+
+    updatePropertiesPanel(selectedElement);
+  }
 });
 
+
 document.addEventListener("mouseup", () => {
+  isDragging = false;
+  isResizing = false;
   isRotating = false;
+  resizeHandle = null;
 });
 
 
@@ -343,18 +337,188 @@ document.addEventListener("mouseup", () => {
 
 // OPTIONAL: font size via keyboard (Ctrl + / Ctrl -)
 document.addEventListener("keydown", e => {
-  if (!selectedElement) return;
-  if (!selectedElement.classList.contains("text")) return;
+  if (!selectedElement || !selectedElement.classList.contains("text")) return;
 
-  const currentSize = parseInt(
-    window.getComputedStyle(selectedElement).fontSize
-  );
+  const currentSize = parseInt(getComputedStyle(selectedElement).fontSize);
 
-  if (e.ctrlKey && e.key === "+") {
+  if (e.ctrlKey && (e.key === "=" || e.key === "+")) {
+    e.preventDefault();
     selectedElement.style.fontSize = currentSize + 2 + "px";
   }
 
   if (e.ctrlKey && e.key === "-") {
+    e.preventDefault();
     selectedElement.style.fontSize = Math.max(8, currentSize - 2) + "px";
   }
 });
+
+
+//============4)Simple Layers Panel=================
+const layersContainer = document.querySelector(".layers");
+
+function renderLayers() {
+  layersContainer.innerHTML = "<h4>Layers</h4>";
+
+  [...layers].reverse().forEach(el => {
+    const item = document.createElement("div");
+    item.classList.add("layer-item");
+    item.textContent = el.id;
+
+    item.onclick = () => selectElement(el);
+
+    const upBtn = document.createElement("button");
+    upBtn.textContent = "▲";
+    upBtn.onclick = e => {
+      e.stopPropagation();
+      moveLayerUp(el);
+    };
+
+    const downBtn = document.createElement("button");
+    downBtn.textContent = "▼";
+    downBtn.onclick = e => {
+      e.stopPropagation();
+      moveLayerDown(el);
+    };
+
+    item.append(upBtn, downBtn);
+    layersContainer.appendChild(item);
+  });
+}
+
+function highlightLayer(el) {
+  document.querySelectorAll(".layer-item").forEach(item => {
+    item.classList.toggle("active", el && item.textContent === el.id);
+  });
+}
+
+function moveLayerUp(el) {
+  const i = layers.indexOf(el);
+  if (i < layers.length - 1) {
+    [layers[i], layers[i + 1]] = [layers[i + 1], layers[i]];
+    canvas.appendChild(el);
+    renderLayers();
+    highlightLayer(el);
+  }
+}
+
+function moveLayerDown(el) {
+  const i = layers.indexOf(el);
+  if (i > 0) {
+    [layers[i], layers[i - 1]] = [layers[i - 1], layers[i]];
+    canvas.insertBefore(el, layers[i]);
+    renderLayers();
+    highlightLayer(el);
+  }
+}
+
+//====================5)Properties Panel===================
+
+
+// inputs (already present in HTML)
+const propertiesPanel = document.querySelector(".properties");
+
+// create text content input dynamically
+const textContentWrapper = document.createElement("div");
+textContentWrapper.className = "pNames";
+
+const textLabel = document.createElement("h6");
+textLabel.textContent = "Text";
+
+const textInput = document.createElement("input");
+textInput.type = "text";
+
+textContentWrapper.append(textLabel, textInput);
+propertiesPanel.appendChild(textContentWrapper);
+
+// hide initially
+textContentWrapper.style.display = "none";
+
+// update panel based on selection
+// function updatePropertiesPanel(el) {
+//   if (!el) {
+//     heightInput.value = "";
+//     widthInput.value = "";
+//     bgInput.value = "";
+//     textInput.value = "";
+//     textContentWrapper.style.display = "none";
+//     return;
+//   }
+
+//   // width / height
+//   widthInput.value = parseInt(el.style.width) || "";
+//   heightInput.value = parseInt(el.style.height) || "";
+
+//   // background color
+//   const bg = el.style.backgroundColor;
+//   bgInput.value =
+//     bg && bg !== "transparent"
+//       ? rgbToHex(bg)
+//       : "#ffffff";
+
+//   // text element handling
+//   if (el.classList.contains("text")) {
+//     textContentWrapper.style.display = "block";
+//     textInput.value = el.textContent;
+//   } else {
+//     textContentWrapper.style.display = "none";
+//   }
+// }
+
+// live text update
+textInput.addEventListener("input", () => {
+  if (selectedElement && selectedElement.classList.contains("text")) {
+    selectedElement.textContent = textInput.value;
+  }
+});
+
+// helper: rgb() → hex
+function rgbToHex(rgb) {
+  if (!rgb.startsWith("rgb")) return rgb;
+
+  const nums = rgb.match(/\d+/g).map(Number);
+  return (
+    "#" +
+    nums
+      .map(n => n.toString(16).padStart(2, "0"))
+      .join("")
+  );
+}
+
+
+const propHeading = document.getElementById("prop-heading");
+
+function updatePropertiesPanel(el) {
+  if (!el) {
+    
+    propHeading.textContent = "No element selected";
+    heightInput.value = "";
+    widthInput.value = "";
+    bgInput.value = "";
+    textInput.value = "";
+    textContentWrapper.style.display = "none";
+    return;
+  }
+  console.log("Properties updated for", el?.id);
+
+
+  // inputs sync
+  widthInput.value = parseInt(el.style.width) || "";
+  heightInput.value = parseInt(el.style.height) || "";
+
+  const bg = el.style.backgroundColor;
+  bgInput.value =
+    bg && bg !== "transparent" ? rgbToHex(bg) : "#ffffff";
+
+  // heading text
+  if (el.classList.contains("text")) {
+    propHeading.textContent =
+      `${el.id} | W:${widthInput.value}px H:${heightInput.value}px | Color:${el.style.color}`;
+    textContentWrapper.style.display = "block";
+    textInput.value = el.textContent;
+  } else {
+    propHeading.textContent =
+      `${el.id} | W:${widthInput.value}px H:${heightInput.value}px | BG:${bgInput.value}`;
+    textContentWrapper.style.display = "none";
+  }
+}
+

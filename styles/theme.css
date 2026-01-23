@@ -1,11 +1,19 @@
 /* styles/theme.css */
 :root {
-  --bg: #5c839f;
+  --pri: #282d40;
   --text: #111111;
-  --panel: #f5f5f5;
-  --border: #30364F;
-  --canvas-bg: #F0F0DB;
+  --sec: #f5f5f5;
+  --pri2: #30364F;
+  --canvas-bg: #191c29;
   --selection: #ACBAC4;
+  --shadow-s:
+  inset 0 1px 2px #131621, /*top highlight*/
+  0 1px 2px #101323,  /*dark shadow*/
+  0 2px 4px #1c213c;  /*soft shadow*/
+  --shadow-m:
+  inset 0 2px 3px #201d1d,  /*top highlight*/
+  0 2px 3px #212121,   /*dark shadow*/
+  0 5px 9px #242121;   /*soft shadow*/
 }
 
 
