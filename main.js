@@ -393,7 +393,7 @@ document.addEventListener("keydown", e => {
 const layersContainer = document.querySelector(".layers");
 
 function renderLayers() {
-  layersContainer.innerHTML = "<h4>Layers</h4>";
+  layersContainer.innerHTML = "<h3>Layers</h3>";
 
   [...layers].reverse().forEach(el => {
     const item = document.createElement("div");
@@ -558,7 +558,7 @@ function updatePropertiesPanel(el) {
   }
 }
 
-//=============Keyboard Interactions =============================
+//=============6)Keyboard Interactions =============================
 
 
 document.addEventListener("keydown", e => {
@@ -696,7 +696,7 @@ function loadLayout() {
 }
 window.addEventListener("DOMContentLoaded", loadLayout);
 
-//==============Export Functionss ===============
+//==============8)Export Functionss ===============
 
 function exportAsJSON() {
   const layout = layers.map(el => ({

@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
 *{
     margin: 0;
     padding: 0;
@@ -7,7 +9,8 @@
 html, body {
     height: 100%;
     width: 100%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Manrope",system-ui, -apple-system, BlinkMacSystemFont,
+               "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     /* background-color: var(--bg); */
     color: var(--text);
 }
@@ -27,6 +30,41 @@ nav{
     border-bottom: 1px solid var(--pri2);
 }
 
+.start {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.start h2{
+    margin-left: 10px;
+    font-weight: 600;
+    font-size: 20px;
+    font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif ;
+}
+
+.start button{
+    border-radius: 50%;
+    height: 30px;
+    width: 30px;
+}
+
+.start button:hover{
+    box-shadow: var(--shadow-m);
+}
+
+.start button:active{
+    scale: 0.97;
+}
+
+.start button img{
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 50%;
+}
 
 .box{
     display: flex;
@@ -36,6 +74,13 @@ nav{
     box-shadow: var(--shadow-s);
     /* background-color: var(--panel); */
    
+}
+
+.end{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
 }
 
 nav .grid{
@@ -98,16 +143,31 @@ input[type="text"], input[type="number"]{
     cursor: pointer;
   }
 
-
   .properties button {
     font-size: 12px;
     font-weight: 540;
     padding: 2px 4px;
     margin: 4px 0px;
     border: none;
+    border-radius: 5px;
     box-shadow: var(--shadow-s);
   }
+  
+  .view h3{
+      margin: 8px ;
+      padding: 10px;
+      border: 2px solid var(--text);
+      border-radius: 5px;
+      box-shadow: var(--shadow-m);
+  }
 
+  .layers h3{
+    margin: 8px ;
+    padding: 10px;
+    border: 2px solid var(--text);
+    border-radius: 5px;
+    box-shadow: var(--shadow-m);
+}
 
 .layer-item {
     height: 29px;
@@ -116,7 +176,7 @@ input[type="text"], input[type="number"]{
     align-items: center;
     justify-content: space-between;
     padding: 10px 12px;
-    margin: 8px;
+    margin: 15px;
     font-size: 10px;
     background: #f4f4f4;
     border-radius: 4px;
@@ -127,13 +187,11 @@ input[type="text"], input[type="number"]{
   background: #eaeaea;
 }
 
-/* selected layer */
 .layer-item.active {
   background: #dbeafe;
   border-left: 3px solid #2563eb;
 }
 
-/* buttons inside layer */
 .layer-item button {
   margin-left: 4px;
   font-size: 11px;
@@ -152,14 +210,6 @@ input[type="text"], input[type="number"]{
   scale:0.97;
 }
 
-.total h3{
-    margin: 8px ;
-    padding: 10px;
-    border: 2px solid var(--text);
-    border-radius: 5px;
-    box-shadow: var(--shadow-m);
-
-}
 .canvas{
     overflow: hidden;
     position: relative;
