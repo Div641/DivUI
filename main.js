@@ -4,18 +4,16 @@ let layers = [];
 const KEY_MOVE_STEP = 5;
 const STORAGE_KEY = "canvas-layout";
 
-
 // default values
 const DEFAULTS = {
   x: 60,
   y: 60,
   width: 120,
   height: 80,
-  border: "#333"
+  border: "#333",
 };
 
 const canvas = document.querySelector(".canvas");
-
 
 // ===== SELECTION =====
 function clearSelection() {
@@ -27,7 +25,6 @@ function clearSelection() {
   selectedElement = null;
   highlightLayer(null);
   // updatePropertiesPanel(null);
-
 }
 
 function selectElement(el) {
@@ -35,7 +32,6 @@ function selectElement(el) {
     layers.push(el);
     renderLayers();
     updatePropertiesPanel(el);
-
   }
 
   if (selectedElement === el) return;
@@ -44,12 +40,9 @@ function selectElement(el) {
   selectedElement = el;
   el.classList.add("selected");
   addResizeHandles(el);
-  if (el.dataset.type !== "line") {
-    addRotationHandle(el);
-  }
+  addRotationHandle(el);
   highlightLayer(el);
   updatePropertiesPanel(el);
-
 }
 
 function removeRotationHandle(el) {
@@ -57,50 +50,27 @@ function removeRotationHandle(el) {
   if (handle) handle.remove();
 }
 
-
 // deselect when clicking empty canvas
-canvas.addEventListener("click", e => {
+canvas.addEventListener("click", (e) => {
   if (e.target === canvas) clearSelection();
 });
 
-
 // ===== Resizing =====
 function addResizeHandles(el) {
-  // ["nw", "ne", "sw", "se"].forEach(pos => {
-  //   const handle = document.createElement("div");
-  //   handle.className = `resize-handle ${pos}`;
-  //   handle.dataset.position = pos;
-
-  //   // stop canvas deselect
-  //   handle.addEventListener("click", e => e.stopPropagation());
-  //   el.appendChild(handle);
-  // });
-  // ===== LINE: only left-right resize =====
-  if (el.dataset.type === "line") {
-    ["w", "e"].forEach(pos => {
-      const handle = document.createElement("div");
-      handle.className = `resize-handle ${pos}`;
-      handle.dataset.position = pos;
-      handle.addEventListener("click", e => e.stopPropagation());
-      el.appendChild(handle);
-    });
-    return;
-  }
-
-  // ===== NORMAL ELEMENTS =====
-  ["nw", "ne", "sw", "se"].forEach(pos => {
+  ["nw", "ne", "sw", "se"].forEach((pos) => {
     const handle = document.createElement("div");
     handle.className = `resize-handle ${pos}`;
     handle.dataset.position = pos;
-    handle.addEventListener("click", e => e.stopPropagation());
+
+    // stop canvas deselect
+    handle.addEventListener("click", (e) => e.stopPropagation());
     el.appendChild(handle);
   });
 }
 
 function removeResizeHandles(el) {
-  el.querySelectorAll(".resize-handle").forEach(h => h.remove());
+  el.querySelectorAll(".resize-handle").forEach((h) => h.remove());
 }
-
 
 // ===== CREATE SHAPE =====
 function createShape(type) {
@@ -121,7 +91,7 @@ function createShape(type) {
     backgroundColor: "transparent",
     border: `2px solid ${DEFAULTS.border}`,
     boxSizing: "border-box",
-    cursor: "pointer"
+    cursor: "pointer",
   });
 
   // save state
@@ -135,14 +105,12 @@ function createShape(type) {
     el.style.height = "4px";
     el.style.backgroundColor = DEFAULTS.border;
     el.style.border = "none";
-    el.dataset.type = "line"; 
-    el.dataset.direction = "horizontal";
   }
 
   if (type === "text") {
     el.textContent = "Edit text";
     el.contentEditable = "plaintext-only"; //  better editor behavior
-    el.tabIndex = 0;                       //  allows focus
+    el.tabIndex = 0; //  allows focus
     el.spellcheck = false;
 
     Object.assign(el.style, {
@@ -151,11 +119,11 @@ function createShape(type) {
       color: "#111",
       fontSize: "18px",
       padding: "4px",
-      cursor: "text"
+      cursor: "text",
     });
 
     // double click to edit aur single click se drag hoga
-    el.addEventListener("dblclick", e => {
+    el.addEventListener("dblclick", (e) => {
       e.stopPropagation();
       el.contentEditable = "true";
       el.focus();
@@ -168,12 +136,12 @@ function createShape(type) {
   }
 
   // click to select
-  el.addEventListener("click", e => {
+  el.addEventListener("click", (e) => {
     e.stopPropagation();
     selectElement(el);
 
     if (el.classList.contains("text")) {
-      el.focus();       //  cursor + keyboard activation
+      el.focus(); //  cursor + keyboard activation
     }
   });
 
@@ -183,14 +151,13 @@ function createShape(type) {
   renderLayers();
   selectElement(el);
   saveLayout();
-
 }
 
 //local storage mai jo jo create ho ,save karte jaayenge
 function saveLayout() {
-  const layout = layers.map(el => ({
+  const layout = layers.map((el) => ({
     id: el.id,
-    type: [...el.classList].find(c => c !== "canvas-element"),
+    type: [...el.classList].find((c) => c !== "canvas-element"),
     left: el.offsetLeft,
     top: el.offsetTop,
     width: el.offsetWidth,
@@ -203,39 +170,34 @@ function saveLayout() {
       border: el.style.border,
       borderRadius: el.style.borderRadius,
       fontSize: el.style.fontSize,
-      padding: el.style.padding
-    }
+      padding: el.style.padding,
+    },
   }));
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
 }
 
-
 let updateZIndices;
 // ===== .box k <i> tag ko click karne par vo specific shape bann jaayega =====
-document.querySelectorAll(".elem").forEach(tool => {
+document.querySelectorAll(".elem").forEach((tool) => {
   tool.addEventListener("click", () => {
     const type = tool.getAttribute("alt"); // rectangle, text, circle, line
     createShape(type);
   });
 });
 
-
-// ===== PROPERTY PANEL ===== ,yaha property mai input daalne pr size change hoga
+// ===== PROPERTY PANEL =====
 const [heightInput, widthInput, bgInput, textColorInput] =
   document.querySelectorAll(".properties input");
 
 heightInput.addEventListener("input", () => {
-  if (!selectedElement) return;
-  if (selectedElement.dataset.type === "line") return;
-  selectedElement.style.height = heightInput.value + "px";
+  if (selectedElement) selectedElement.style.height = heightInput.value + "px";
   saveLayout();
 });
 
 widthInput.addEventListener("input", () => {
-  if (selectedElement)
-    selectedElement.style.width = widthInput.value + "px";
-    saveLayout();
+  if (selectedElement) selectedElement.style.width = widthInput.value + "px";
+  saveLayout();
 });
 
 bgInput.addEventListener("input", () => {
@@ -246,11 +208,9 @@ bgInput.addEventListener("input", () => {
 });
 
 textColorInput.addEventListener("input", () => {
-  if (selectedElement)
-    selectedElement.style.color = textColorInput.value;
-    saveLayout();
+  if (selectedElement) selectedElement.style.color = textColorInput.value;
+  saveLayout();
 });
-
 
 //=====3) Dragging ,Resizing and Rotating=====
 
@@ -266,38 +226,12 @@ let startX, startY, startWidth, startHeight, startLeft, startTop;
 const MIN_SIZE = 20;
 
 // ================= ROTATION =================
-let isRotating = false; 
+let isRotating = false;
 let startAngle = 0;
 
-
-canvas.addEventListener("mousedown", e => {
+canvas.addEventListener("mousedown", (e) => {
   if (!selectedElement) return;
 
-  // ===== LINE RESIZE (endpoint drag) =====
-  if (
-    e.target.classList.contains("resize-handle") &&
-    selectedElement.dataset.type === "line"
-  ) {
-    isResizing = true;
-    resizeHandle = e.target.dataset.position;
-
-    const rect = selectedElement.getBoundingClientRect();
-
-    if (resizeHandle === "e") {
-      selectedElement._anchorX = rect.left;
-      selectedElement._anchorY = rect.top + rect.height / 2;
-    }
-
-    if (resizeHandle === "w") {
-      selectedElement._anchorX = rect.right;
-      selectedElement._anchorY = rect.top + rect.height / 2;
-    }
-
-    e.stopPropagation();
-    return;
-  }
-
-  // ===== NORMAL RESIZE =====
   if (e.target.classList.contains("resize-handle")) {
     isResizing = true;
     resizeHandle = e.target.dataset.position;
@@ -313,118 +247,78 @@ canvas.addEventListener("mousedown", e => {
     return;
   }
 
-  // ===== DRAG =====
   if (e.target === selectedElement) {
     isDragging = true;
 
     const rect = selectedElement.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+
     dragOffsetX = e.clientX - rect.left;
     dragOffsetY = e.clientY - rect.top;
 
     e.preventDefault();
+    updatePropertiesPanel(selectedElement);
   }
 });
 
+function addRotationHandle(el) {
+  const rotateHandle = document.createElement("div");
+  rotateHandle.classList.add("rotate-handle");
+  el.appendChild(rotateHandle);
 
+  rotateHandle.addEventListener("mousedown", (e) => {
+    e.stopPropagation();
+    isRotating = true;
 
-document.addEventListener("mousemove", e => {
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
 
-  // ===== LINE MOVE =====
-if (isResizing && selectedElement?.dataset.type === "line") {
-
-  const ax = selectedElement._anchorX;
-  const ay = selectedElement._anchorY;
-  if (ax == null || ay == null) return;
-
-  const mx = e.clientX;
-  const my = e.clientY;
-
-  const dx = mx - ax;
-  const dy = my - ay;
-
-  const length = Math.max(20, Math.hypot(dx, dy));
-  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-  selectedElement.style.left = ax + "px";
-  selectedElement.style.top = (ay - 2) + "px";
-  selectedElement.style.width = length + "px";
-  selectedElement.style.height = "4px";
-
-  selectedElement.style.transformOrigin = "0 50%";
-  selectedElement.style.transform = `rotate(${angle}deg)`;
-  selectedElement.dataset.rotation = angle;
-
-  return;
+    startAngle = (Math.atan2(e.clientY - cy, e.clientX - cx) * 180) / Math.PI;
+  });
 }
 
+document.addEventListener("mousemove", (e) => {
   if (isDragging && selectedElement) {
     const canvasRect = canvas.getBoundingClientRect();
     let left = e.clientX - canvasRect.left - dragOffsetX;
     let top = e.clientY - canvasRect.top - dragOffsetY;
 
-    left = Math.max(0, Math.min(left, canvas.clientWidth - selectedElement.offsetWidth));
-    top = Math.max(0, Math.min(top, canvas.clientHeight - selectedElement.offsetHeight));
+    left = Math.max(
+      0,
+      Math.min(left, canvas.clientWidth - selectedElement.offsetWidth),
+    );
+    top = Math.max(
+      0,
+      Math.min(top, canvas.clientHeight - selectedElement.offsetHeight),
+    );
 
     selectedElement.style.left = left + "px";
     selectedElement.style.top = top + "px";
     updatePropertiesPanel(selectedElement);
     saveLayout();
-
   }
 
   if (isResizing && selectedElement) {
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
 
-    //for line 1-d resizing
-    if (isResizing && selectedElement?.dataset.type === "line") {
-
-  const ax = selectedElement._anchorX;
-  const ay = selectedElement._anchorY;
-
-  const mx = e.clientX;
-  const my = e.clientY;
-
-  // vector calculation
-  const dx = mx - ax;
-  const dy = my - ay;
-
-  const length = Math.max(MIN_SIZE, Math.hypot(dx, dy));
-  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
-  // line ko anchor point par rakho
-  selectedElement.style.left = ax + "px";
-  selectedElement.style.top = (ay - 2) + "px"; // half of 4px thickness
-
-  selectedElement.style.width = length + "px";
-  selectedElement.style.height = "4px";
-
-  selectedElement.style.transformOrigin = "0 50%";
-  selectedElement.style.transform = `rotate(${angle}deg)`;
-
-  selectedElement.dataset.rotation = angle;
-
-  updatePropertiesPanel(selectedElement);
-  return;
-}
-
-
-    //for 2-d resizing
     if (resizeHandle.includes("e"))
       selectedElement.style.width = Math.max(MIN_SIZE, startWidth + dx) + "px";
     if (resizeHandle.includes("s"))
-      selectedElement.style.height = Math.max(MIN_SIZE, startHeight + dy) + "px";
+      selectedElement.style.height =
+        Math.max(MIN_SIZE, startHeight + dy) + "px";
     if (resizeHandle.includes("w")) {
       selectedElement.style.width = Math.max(MIN_SIZE, startWidth - dx) + "px";
       selectedElement.style.left = startLeft + dx + "px";
     }
     if (resizeHandle.includes("n")) {
-      selectedElement.style.height = Math.max(MIN_SIZE, startHeight - dy) + "px";
+      selectedElement.style.height =
+        Math.max(MIN_SIZE, startHeight - dy) + "px";
       selectedElement.style.top = startTop + dy + "px";
     }
 
-     updatePropertiesPanel(selectedElement);
-
+    updatePropertiesPanel(selectedElement);
   }
 
   if (isRotating && selectedElement) {
@@ -432,14 +326,13 @@ if (isResizing && selectedElement?.dataset.type === "line") {
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
 
-    const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
+    const angle = (Math.atan2(e.clientY - cy, e.clientX - cx) * 180) / Math.PI;
     const rotation = angle - startAngle;
 
     selectedElement.dataset.rotation =
       (parseFloat(selectedElement.dataset.rotation) || 0) + rotation;
 
-    selectedElement.style.transform =
-      `rotate(${selectedElement.dataset.rotation}deg)`;
+    selectedElement.style.transform = `rotate(${selectedElement.dataset.rotation}deg)`;
 
     startAngle = angle;
 
@@ -447,30 +340,21 @@ if (isResizing && selectedElement?.dataset.type === "line") {
   }
 });
 
-
 document.addEventListener("mouseup", () => {
   isDragging = false;
   isResizing = false;
   isRotating = false;
   resizeHandle = null;
-
-  if (selectedElement) {
-      delete selectedElement._anchorX;
-      delete selectedElement._anchorY;
-    }
-
   saveLayout();
 });
-
 
 // ================= TEXT EDITING SUPPORT =================
 
 //canvas ka mousedown listener property panel se ho jayega
 // text color ka kaam property panel kar raha hai already
 
-
 // OPTIONAL: font size via keyboard (Ctrl + / Ctrl -)
-document.addEventListener("keydown", e => {
+document.addEventListener("keydown", (e) => {
   if (!selectedElement || !selectedElement.classList.contains("text")) return;
 
   const currentSize = parseInt(getComputedStyle(selectedElement).fontSize);
@@ -486,14 +370,13 @@ document.addEventListener("keydown", e => {
   }
 });
 
-
 //============4)Simple Layers Panel=================
 const layersContainer = document.querySelector(".layers");
 
 function renderLayers() {
   layersContainer.innerHTML = "<h3>Layers</h3>";
 
-  [...layers].reverse().forEach(el => {
+  [...layers].reverse().forEach((el) => {
     const item = document.createElement("div");
     item.classList.add("layer-item");
     item.textContent = el.id;
@@ -502,14 +385,14 @@ function renderLayers() {
 
     const upBtn = document.createElement("button");
     upBtn.textContent = "▲";
-    upBtn.onclick = e => {
+    upBtn.onclick = (e) => {
       e.stopPropagation();
       moveLayerUp(el);
     };
 
     const downBtn = document.createElement("button");
     downBtn.textContent = "▼";
-    downBtn.onclick = e => {
+    downBtn.onclick = (e) => {
       e.stopPropagation();
       moveLayerDown(el);
     };
@@ -520,7 +403,7 @@ function renderLayers() {
 }
 
 function highlightLayer(el) {
-  document.querySelectorAll(".layer-item").forEach(item => {
+  document.querySelectorAll(".layer-item").forEach((item) => {
     item.classList.toggle("active", el && item.textContent === el.id);
   });
 }
@@ -547,56 +430,75 @@ function moveLayerDown(el) {
 
 //====================5)Properties Panel===================
 
-
+// inputs (already present in HTML)
 const propertiesPanel = document.querySelector(".properties");
-const textContentWrapper = document.querySelector("#content");
-const textLabel = textContentWrapper.querySelector("h6");
-const textInput = textContentWrapper.querySelector(" input");
 
+// create text content input dynamically
+const textContentWrapper = document.createElement("div");
+textContentWrapper.className = "pNames";
 
+const textLabel = document.createElement("h6");
+textLabel.textContent = "Text";
 
-/* ====== CALL THIS WHEN ELEMENT IS SELECTED ====== */
-function updateTextPanel(selectedElement) {
-  if (
-    selectedElement &&
-    selectedElement.classList.contains("text")
-  ) {
-   
-   // put selected element text into input
-    textInput.value = selectedElement.textContent;
-  } 
-}
+const textInput = document.createElement("input");
+textInput.type = "text";
 
-/* ====== LIVE INPUT → ELEMENT ====== */
+textContentWrapper.append(textLabel, textInput);
+propertiesPanel.appendChild(textContentWrapper);
+
+// hide initially
+textContentWrapper.style.display = "none";
+
+// update panel based on selection
+// function updatePropertiesPanel(el) {
+//   if (!el) {
+//     heightInput.value = "";
+//     widthInput.value = "";
+//     bgInput.value = "";
+//     textInput.value = "";
+//     textContentWrapper.style.display = "none";
+//     return;
+//   }
+
+//   // width / height
+//   widthInput.value = parseInt(el.style.width) || "";
+//   heightInput.value = parseInt(el.style.height) || "";
+
+//   // background color
+//   const bg = el.style.backgroundColor;
+//   bgInput.value =
+//     bg && bg !== "transparent"
+//       ? rgbToHex(bg)
+//       : "#ffffff";
+
+//   // text element handling
+//   if (el.classList.contains("text")) {
+//     textContentWrapper.style.display = "block";
+//     textInput.value = el.textContent;
+//   } else {
+//     textContentWrapper.style.display = "none";
+//   }
+// }
+
+// live text update
 textInput.addEventListener("input", () => {
-  if (
-    selectedElement &&
-    selectedElement.classList.contains("text")
-  ) {
+  if (selectedElement && selectedElement.classList.contains("text")) {
     selectedElement.textContent = textInput.value;
   }
 });
-
 
 // helper: rgb() → hex
 function rgbToHex(rgb) {
   if (!rgb.startsWith("rgb")) return rgb;
 
   const nums = rgb.match(/\d+/g).map(Number);
-  return (
-    "#" +
-    nums
-      .map(n => n.toString(16).padStart(2, "0"))
-      .join("")
-  );
+  return "#" + nums.map((n) => n.toString(16).padStart(2, "0")).join("");
 }
-
 
 const propHeading = document.getElementById("prop-heading");
 
 function updatePropertiesPanel(el) {
   if (!el) {
-    
     propHeading.textContent = "No element selected";
     heightInput.value = "";
     widthInput.value = "";
@@ -607,32 +509,27 @@ function updatePropertiesPanel(el) {
   }
   console.log("Properties updated for", el?.id);
 
-
   // inputs sync
   widthInput.value = parseInt(el.style.width) || "";
   heightInput.value = parseInt(el.style.height) || "";
 
   const bg = el.style.backgroundColor;
-  bgInput.value =
-    bg && bg !== "transparent" ? rgbToHex(bg) : "#ffffff";
+  bgInput.value = bg && bg !== "transparent" ? rgbToHex(bg) : "#ffffff";
 
   // heading text
   if (el.classList.contains("text")) {
-    propHeading.textContent =
-      `${el.id} | W:${widthInput.value}px H:${heightInput.value}px | Color:${el.style.color}`;
+    propHeading.textContent = `${el.id} | W:${widthInput.value}px H:${heightInput.value}px | Color:${el.style.color}`;
     textContentWrapper.style.display = "block";
     textInput.value = el.textContent;
   } else {
-    propHeading.textContent =
-      `${el.id} | W:${widthInput.value}px H:${heightInput.value}px | BG:${bgInput.value}`;
+    propHeading.textContent = `${el.id} | W:${widthInput.value}px H:${heightInput.value}px | BG:${bgInput.value}`;
     textContentWrapper.style.display = "none";
   }
 }
 
 //=============6)Keyboard Interactions =============================
 
-
-document.addEventListener("keydown", e => {
+document.addEventListener("keydown", (e) => {
   if (!selectedElement) return;
 
   const canvasRect = canvas.getBoundingClientRect();
@@ -676,17 +573,16 @@ document.addEventListener("keydown", e => {
   // boundary clamp
   left = Math.max(
     0,
-    Math.min(left, canvas.clientWidth - selectedElement.offsetWidth)
+    Math.min(left, canvas.clientWidth - selectedElement.offsetWidth),
   );
 
   top = Math.max(
     0,
-    Math.min(top, canvas.clientHeight - selectedElement.offsetHeight)
+    Math.min(top, canvas.clientHeight - selectedElement.offsetHeight),
   );
 
   selectedElement.style.left = left + "px";
   selectedElement.style.top = top + "px";
-
 
   updatePropertiesPanel(selectedElement);
   saveLayout();
@@ -701,7 +597,7 @@ function deleteSelectedElement() {
   el.remove();
 
   // remove from layers array
-  layers = layers.filter(layer => layer !== el);
+  layers = layers.filter((layer) => layer !== el);
 
   // clear selection
   selectedElement = null;
@@ -709,7 +605,6 @@ function deleteSelectedElement() {
   highlightLayer(null);
   updatePropertiesPanel(null);
   saveLayout();
-
 }
 
 function loadLayout() {
@@ -722,17 +617,11 @@ function loadLayout() {
   layers = [];
   selectedElement = null;
 
-  layout.forEach(data => {
+  layout.forEach((data) => {
     elementCount++;
 
     const el = document.createElement("div");
     el.classList.add("canvas-element", data.type);
-
-    if (data.type === "line") {
-      el.dataset.type = "line";
-      el.dataset.direction = "horizontal";
-    }
-
     el.id = data.id;
 
     Object.assign(el.style, {
@@ -747,7 +636,7 @@ function loadLayout() {
       borderRadius: data.styles.borderRadius,
       fontSize: data.styles.fontSize,
       padding: data.styles.padding,
-      transform: `rotate(${data.rotation}deg)`
+      transform: `rotate(${data.rotation}deg)`,
     });
 
     el.dataset.rotation = data.rotation;
@@ -758,7 +647,7 @@ function loadLayout() {
       el.tabIndex = 0;
     }
 
-    el.addEventListener("click", e => {
+    el.addEventListener("click", (e) => {
       e.stopPropagation();
       selectElement(el);
     });
@@ -769,16 +658,15 @@ function loadLayout() {
 
   renderLayers();
   elementCount = layers.length;
-
 }
 window.addEventListener("DOMContentLoaded", loadLayout);
 
 //==============8)Export Functionss ===============
 
 function exportAsJSON() {
-  const layout = layers.map(el => ({
+  const layout = layers.map((el) => ({
     id: el.id,
-    type: [...el.classList].find(c => c !== "canvas-element"),
+    type: [...el.classList].find((c) => c !== "canvas-element"),
     left: el.offsetLeft,
     top: el.offsetTop,
     width: el.offsetWidth,
@@ -791,23 +679,21 @@ function exportAsJSON() {
       border: el.style.border,
       borderRadius: el.style.borderRadius,
       fontSize: el.style.fontSize,
-      padding: el.style.padding
-    }
+      padding: el.style.padding,
+    },
   }));
 
-  const blob = new Blob(
-    [JSON.stringify(layout, null, 2)],
-    { type: "application/json" }
-  );
+  const blob = new Blob([JSON.stringify(layout, null, 2)], {
+    type: "application/json",
+  });
 
   downloadFile(blob, "design.json");
 }
 
-
-
 function exportAsHTML() {
-  const elementsHTML = layers.map(el => {
-    const styles = `
+  const elementsHTML = layers
+    .map((el) => {
+      const styles = `
       position:absolute;
       left:${el.offsetLeft}px;
       top:${el.offsetTop}px;
@@ -823,12 +709,13 @@ function exportAsHTML() {
       box-sizing:border-box;
     `;
 
-    if (el.classList.contains("text")) {
-      return `<div style="${styles}">${el.textContent}</div>`;
-    }
+      if (el.classList.contains("text")) {
+        return `<div style="${styles}">${el.textContent}</div>`;
+      }
 
-    return `<div style="${styles}"></div>`;
-  }).join("\n");
+      return `<div style="${styles}"></div>`;
+    })
+    .join("\n");
 
   const html = `
 <!DOCTYPE html>
@@ -853,7 +740,6 @@ function exportAsHTML() {
   const blob = new Blob([html], { type: "text/html" });
   downloadFile(blob, "design.html");
 }
-
 
 function downloadFile(blob, filename) {
   const url = URL.createObjectURL(blob);
