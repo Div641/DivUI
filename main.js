@@ -10,7 +10,7 @@ const DEFAULTS = {
   y: 60,
   width: 120,
   height: 80,
-  border: "#333",
+  border: "#e0e0e0",
 };
 
 const canvas = document.querySelector(".canvas");
@@ -24,7 +24,7 @@ function clearSelection() {
   removeRotationHandle(selectedElement);
   selectedElement = null;
   highlightLayer(null);
-  // updatePropertiesPanel(null);
+  updatePropertiesPanel(null);
 }
 
 function selectElement(el) {
@@ -57,13 +57,41 @@ canvas.addEventListener("click", (e) => {
 
 // ===== Resizing =====
 function addResizeHandles(el) {
-  ["nw", "ne", "sw", "se"].forEach((pos) => {
+  // Check if it is a Line 
+  const isLine = el.dataset.type === "line";
+
+  // Decide Handles Lines ko West/East. Others ko Corners.
+  const positions = isLine ? ["w", "e"] : ["nw", "ne", "sw", "se"];
+
+  positions.forEach((pos) => {
     const handle = document.createElement("div");
-    handle.className = `resize-handle ${pos}`;
+
+    handle.className = "resize-handle " + pos;
+
     handle.dataset.position = pos;
 
-    // stop canvas deselect
+    // Prevent clicking handle from deselecting element
     handle.addEventListener("click", (e) => e.stopPropagation());
+    // handle.addEventListener("mousedown", (e) => e.stopPropagation());
+
+    // Line ki styling
+    if (isLine) {
+        Object.assign(handle.style, {
+            top: "50%",
+            marginTop: "-5px",
+            cursor: "ew-resize",
+            position: "absolute",
+            width: "10px",
+            height: "10px",
+            backgroundColor: "#fff",
+            border: "1px solid #2563eb",
+            zIndex: "10"
+        });
+
+        if (pos === "w") handle.style.left = "-6px";
+        if (pos === "e") handle.style.right = "-6px";
+    }
+
     el.appendChild(handle);
   });
 }
@@ -105,6 +133,7 @@ function createShape(type) {
     el.style.height = "4px";
     el.style.backgroundColor = DEFAULTS.border;
     el.style.border = "none";
+    el.dataset.type="line";
   }
 
   if (type === "text") {
@@ -114,9 +143,9 @@ function createShape(type) {
     el.spellcheck = false;
 
     Object.assign(el.style, {
-      border: "1px dashed #666",
+      border: "1px dashed #777",
       backgroundColor: "transparent",
-      color: "#111",
+      color: "#ffff",
       fontSize: "18px",
       padding: "4px",
       cursor: "text",
@@ -490,16 +519,22 @@ function updatePropertiesPanel(el) {
       bgInput.value = rgbToHex(bg);
   }
   
-  // Special Case for LINE 
+  // Special Case for LINE (Treat like a shape but usually no background fill)
   if (el.dataset.type === "line") {
       propHeading.textContent = "Line Element";
-      bgWrapper.style.display = "flex"; // We use BG color input to control line stroke color
+      bgWrapper.style.display = "flex";
       textColorWrapper.style.display = "none";
       textContentWrapper.style.display = "none";
-      
-      // Sync Line Color
+
+      // [ADD THIS] Disable Height editing for lines
+      heightInput.disabled = true;
+      heightInput.value = "4"; // Force display to 4px
+
       const bg = el.style.backgroundColor || computed.backgroundColor;
       bgInput.value = rgbToHex(bg);
+  } else {
+      // [ADD THIS] Re-enable height for other shapes
+      heightInput.disabled = false;
   }
 }
 
