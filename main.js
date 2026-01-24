@@ -44,7 +44,9 @@ function selectElement(el) {
   selectedElement = el;
   el.classList.add("selected");
   addResizeHandles(el);
-  addRotationHandle(el);
+  if (el.dataset.type !== "line") {
+    addRotationHandle(el);
+  }
   highlightLayer(el);
   updatePropertiesPanel(el);
 
@@ -64,12 +66,32 @@ canvas.addEventListener("click", e => {
 
 // ===== Resizing =====
 function addResizeHandles(el) {
+  // ["nw", "ne", "sw", "se"].forEach(pos => {
+  //   const handle = document.createElement("div");
+  //   handle.className = `resize-handle ${pos}`;
+  //   handle.dataset.position = pos;
+
+  //   // stop canvas deselect
+  //   handle.addEventListener("click", e => e.stopPropagation());
+  //   el.appendChild(handle);
+  // });
+  // ===== LINE: only left-right resize =====
+  if (el.dataset.type === "line") {
+    ["w", "e"].forEach(pos => {
+      const handle = document.createElement("div");
+      handle.className = `resize-handle ${pos}`;
+      handle.dataset.position = pos;
+      handle.addEventListener("click", e => e.stopPropagation());
+      el.appendChild(handle);
+    });
+    return;
+  }
+
+  // ===== NORMAL ELEMENTS =====
   ["nw", "ne", "sw", "se"].forEach(pos => {
     const handle = document.createElement("div");
     handle.className = `resize-handle ${pos}`;
     handle.dataset.position = pos;
-
-    // stop canvas deselect
     handle.addEventListener("click", e => e.stopPropagation());
     el.appendChild(handle);
   });
@@ -113,6 +135,8 @@ function createShape(type) {
     el.style.height = "4px";
     el.style.backgroundColor = DEFAULTS.border;
     el.style.border = "none";
+    el.dataset.type = "line"; 
+    el.dataset.direction = "horizontal";
   }
 
   if (type === "text") {
@@ -197,14 +221,15 @@ document.querySelectorAll(".elem").forEach(tool => {
 });
 
 
-// ===== PROPERTY PANEL =====
+// ===== PROPERTY PANEL ===== ,yaha property mai input daalne pr size change hoga
 const [heightInput, widthInput, bgInput, textColorInput] =
   document.querySelectorAll(".properties input");
 
 heightInput.addEventListener("input", () => {
-  if (selectedElement)
-    selectedElement.style.height = heightInput.value + "px";
-    saveLayout();
+  if (!selectedElement) return;
+  if (selectedElement.dataset.type === "line") return;
+  selectedElement.style.height = heightInput.value + "px";
+  saveLayout();
 });
 
 widthInput.addEventListener("input", () => {
@@ -248,6 +273,31 @@ let startAngle = 0;
 canvas.addEventListener("mousedown", e => {
   if (!selectedElement) return;
 
+  // ===== LINE RESIZE (endpoint drag) =====
+  if (
+    e.target.classList.contains("resize-handle") &&
+    selectedElement.dataset.type === "line"
+  ) {
+    isResizing = true;
+    resizeHandle = e.target.dataset.position;
+
+    const rect = selectedElement.getBoundingClientRect();
+
+    if (resizeHandle === "e") {
+      selectedElement._anchorX = rect.left;
+      selectedElement._anchorY = rect.top + rect.height / 2;
+    }
+
+    if (resizeHandle === "w") {
+      selectedElement._anchorX = rect.right;
+      selectedElement._anchorY = rect.top + rect.height / 2;
+    }
+
+    e.stopPropagation();
+    return;
+  }
+
+  // ===== NORMAL RESIZE =====
   if (e.target.classList.contains("resize-handle")) {
     isResizing = true;
     resizeHandle = e.target.dataset.position;
@@ -263,42 +313,50 @@ canvas.addEventListener("mousedown", e => {
     return;
   }
 
+  // ===== DRAG =====
   if (e.target === selectedElement) {
     isDragging = true;
 
     const rect = selectedElement.getBoundingClientRect();
-    const canvasRect = canvas.getBoundingClientRect();
-
     dragOffsetX = e.clientX - rect.left;
     dragOffsetY = e.clientY - rect.top;
 
     e.preventDefault();
-    updatePropertiesPanel(selectedElement);
   }
 });
 
 
-function addRotationHandle(el) {
-  const rotateHandle = document.createElement("div");
-  rotateHandle.classList.add("rotate-handle");
-  el.appendChild(rotateHandle);
-
-  rotateHandle.addEventListener("mousedown", e => {
-    e.stopPropagation();
-    isRotating = true;
-
-    const rect = el.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-
-    startAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
-
-
-      });
-}
-
 
 document.addEventListener("mousemove", e => {
+
+  // ===== LINE MOVE =====
+if (isResizing && selectedElement?.dataset.type === "line") {
+
+  const ax = selectedElement._anchorX;
+  const ay = selectedElement._anchorY;
+  if (ax == null || ay == null) return;
+
+  const mx = e.clientX;
+  const my = e.clientY;
+
+  const dx = mx - ax;
+  const dy = my - ay;
+
+  const length = Math.max(20, Math.hypot(dx, dy));
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  selectedElement.style.left = ax + "px";
+  selectedElement.style.top = (ay - 2) + "px";
+  selectedElement.style.width = length + "px";
+  selectedElement.style.height = "4px";
+
+  selectedElement.style.transformOrigin = "0 50%";
+  selectedElement.style.transform = `rotate(${angle}deg)`;
+  selectedElement.dataset.rotation = angle;
+
+  return;
+}
+
   if (isDragging && selectedElement) {
     const canvasRect = canvas.getBoundingClientRect();
     let left = e.clientX - canvasRect.left - dragOffsetX;
@@ -318,6 +376,40 @@ document.addEventListener("mousemove", e => {
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
 
+    //for line 1-d resizing
+    if (isResizing && selectedElement?.dataset.type === "line") {
+
+  const ax = selectedElement._anchorX;
+  const ay = selectedElement._anchorY;
+
+  const mx = e.clientX;
+  const my = e.clientY;
+
+  // vector calculation
+  const dx = mx - ax;
+  const dy = my - ay;
+
+  const length = Math.max(MIN_SIZE, Math.hypot(dx, dy));
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  // line ko anchor point par rakho
+  selectedElement.style.left = ax + "px";
+  selectedElement.style.top = (ay - 2) + "px"; // half of 4px thickness
+
+  selectedElement.style.width = length + "px";
+  selectedElement.style.height = "4px";
+
+  selectedElement.style.transformOrigin = "0 50%";
+  selectedElement.style.transform = `rotate(${angle}deg)`;
+
+  selectedElement.dataset.rotation = angle;
+
+  updatePropertiesPanel(selectedElement);
+  return;
+}
+
+
+    //for 2-d resizing
     if (resizeHandle.includes("e"))
       selectedElement.style.width = Math.max(MIN_SIZE, startWidth + dx) + "px";
     if (resizeHandle.includes("s"))
@@ -361,6 +453,12 @@ document.addEventListener("mouseup", () => {
   isResizing = false;
   isRotating = false;
   resizeHandle = null;
+
+  if (selectedElement) {
+      delete selectedElement._anchorX;
+      delete selectedElement._anchorY;
+    }
+
   saveLayout();
 });
 
@@ -450,62 +548,35 @@ function moveLayerDown(el) {
 //====================5)Properties Panel===================
 
 
-// inputs (already present in HTML)
 const propertiesPanel = document.querySelector(".properties");
+const textContentWrapper = document.querySelector("#content");
+const textLabel = textContentWrapper.querySelector("h6");
+const textInput = textContentWrapper.querySelector(" input");
 
-// create text content input dynamically
-const textContentWrapper = document.createElement("div");
-textContentWrapper.className = "pNames";
 
-const textLabel = document.createElement("h6");
-textLabel.textContent = "Text";
 
-const textInput = document.createElement("input");
-textInput.type = "text";
+/* ====== CALL THIS WHEN ELEMENT IS SELECTED ====== */
+function updateTextPanel(selectedElement) {
+  if (
+    selectedElement &&
+    selectedElement.classList.contains("text")
+  ) {
+   
+   // put selected element text into input
+    textInput.value = selectedElement.textContent;
+  } 
+}
 
-textContentWrapper.append(textLabel, textInput);
-propertiesPanel.appendChild(textContentWrapper);
-
-// hide initially
-textContentWrapper.style.display = "none";
-
-// update panel based on selection
-// function updatePropertiesPanel(el) {
-//   if (!el) {
-//     heightInput.value = "";
-//     widthInput.value = "";
-//     bgInput.value = "";
-//     textInput.value = "";
-//     textContentWrapper.style.display = "none";
-//     return;
-//   }
-
-//   // width / height
-//   widthInput.value = parseInt(el.style.width) || "";
-//   heightInput.value = parseInt(el.style.height) || "";
-
-//   // background color
-//   const bg = el.style.backgroundColor;
-//   bgInput.value =
-//     bg && bg !== "transparent"
-//       ? rgbToHex(bg)
-//       : "#ffffff";
-
-//   // text element handling
-//   if (el.classList.contains("text")) {
-//     textContentWrapper.style.display = "block";
-//     textInput.value = el.textContent;
-//   } else {
-//     textContentWrapper.style.display = "none";
-//   }
-// }
-
-// live text update
+/* ====== LIVE INPUT → ELEMENT ====== */
 textInput.addEventListener("input", () => {
-  if (selectedElement && selectedElement.classList.contains("text")) {
+  if (
+    selectedElement &&
+    selectedElement.classList.contains("text")
+  ) {
     selectedElement.textContent = textInput.value;
   }
 });
+
 
 // helper: rgb() → hex
 function rgbToHex(rgb) {
@@ -656,6 +727,12 @@ function loadLayout() {
 
     const el = document.createElement("div");
     el.classList.add("canvas-element", data.type);
+
+    if (data.type === "line") {
+      el.dataset.type = "line";
+      el.dataset.direction = "horizontal";
+    }
+
     el.id = data.id;
 
     Object.assign(el.style, {

@@ -25,19 +25,20 @@
 
             <div class="box grid"> 
                 
-                    <div class="elem" alt="rectangle">
-                    <i class="ri-rectangle-line"></i>
-                </div>
-                <div class="elem" alt="text">
-                    <i class="ri-font-family"></i>
-                </div>
-                <div class="elem" alt="circle">
-                    <i class="ri-circle-line"></i>
-                </div>
-                <div class="elem" alt="line">
-                    <i class="ri-subtract-line"></i>
+                    <button class="elem" alt="rectangle">
+                        <i class="ri-rectangle-line"></i>
+                    </button>
+                    <button class="elem" alt="text">
+                        <i class="ri-font-family"></i>
+                    </button>
+
+                    <button class="elem" alt="circle">
+                        <i class="ri-circle-line"></i>
+                    </button>
+                    <button class="elem" alt="line">
+                        <i class="ri-subtract-line"></i>
+                    </button>
                 
-                </div>
             </div>
 
 
@@ -63,7 +64,7 @@
             <div class="properties">
                 <div class="view">
                     <h3>Properties</h3>
-                <h4 id="prop-heading">No element selected</h4>
+                    <h4 id="prop-heading">No element selected</h4>
 
                 <div class="pNames">
                     <h6>Height</h6>
@@ -81,7 +82,11 @@
                     <h6>TextColor</h6>
                     <input value="" type="color">
                 </div>
+                <div class="pNames" id="content">
+                    <h6>TextContent</h6>
+                    <input value="Edit text" type="text">
                 </div>
+            </div>
 
                 <div class="export-fn">
                     <button onclick="exportAsJSON()">Export JSON</button>
