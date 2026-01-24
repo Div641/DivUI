@@ -133,6 +133,16 @@ function createShape(type) {
     el.addEventListener("blur", () => {
       el.contentEditable = "false";
     });
+
+    // Sync Canvas typing -> Properties Panel input
+    el.addEventListener("input", () => {
+      if (selectedElement === el) {
+        // Manually select the input since variable might be out of scope depending on order
+        const propInput = document.querySelector("#content input");
+        if (propInput) propInput.value = el.textContent;
+      }
+    });
+     
   }
 
   // click to select
@@ -186,31 +196,6 @@ document.querySelectorAll(".elem").forEach((tool) => {
   });
 });
 
-// ===== PROPERTY PANEL =====
-const [heightInput, widthInput, bgInput, textColorInput] =
-  document.querySelectorAll(".properties input");
-
-heightInput.addEventListener("input", () => {
-  if (selectedElement) selectedElement.style.height = heightInput.value + "px";
-  saveLayout();
-});
-
-widthInput.addEventListener("input", () => {
-  if (selectedElement) selectedElement.style.width = widthInput.value + "px";
-  saveLayout();
-});
-
-bgInput.addEventListener("input", () => {
-  if (!selectedElement || selectedElement.classList.contains("line")) return;
-  selectedElement.style.backgroundColor = bgInput.value;
-  selectedElement.dataset.fill = bgInput.value;
-  saveLayout();
-});
-
-textColorInput.addEventListener("input", () => {
-  if (selectedElement) selectedElement.style.color = textColorInput.value;
-  saveLayout();
-});
 
 //=====3) Dragging ,Resizing and Rotating=====
 
@@ -248,6 +233,10 @@ canvas.addEventListener("mousedown", (e) => {
   }
 
   if (e.target === selectedElement) {
+
+    if (selectedElement.isContentEditable) {
+      return;
+    }
     isDragging = true;
 
     const rect = selectedElement.getBoundingClientRect();
@@ -430,108 +419,148 @@ function moveLayerDown(el) {
 
 //====================5)Properties Panel===================
 
-// inputs (already present in HTML)
 const propertiesPanel = document.querySelector(".properties");
-
-// create text content input dynamically
-const textContentWrapper = document.createElement("div");
-textContentWrapper.className = "pNames";
-
-const textLabel = document.createElement("h6");
-textLabel.textContent = "Text";
-
-const textInput = document.createElement("input");
-textInput.type = "text";
-
-textContentWrapper.append(textLabel, textInput);
-propertiesPanel.appendChild(textContentWrapper);
-
-// hide initially
-textContentWrapper.style.display = "none";
-
-// update panel based on selection
-// function updatePropertiesPanel(el) {
-//   if (!el) {
-//     heightInput.value = "";
-//     widthInput.value = "";
-//     bgInput.value = "";
-//     textInput.value = "";
-//     textContentWrapper.style.display = "none";
-//     return;
-//   }
-
-//   // width / height
-//   widthInput.value = parseInt(el.style.width) || "";
-//   heightInput.value = parseInt(el.style.height) || "";
-
-//   // background color
-//   const bg = el.style.backgroundColor;
-//   bgInput.value =
-//     bg && bg !== "transparent"
-//       ? rgbToHex(bg)
-//       : "#ffffff";
-
-//   // text element handling
-//   if (el.classList.contains("text")) {
-//     textContentWrapper.style.display = "block";
-//     textInput.value = el.textContent;
-//   } else {
-//     textContentWrapper.style.display = "none";
-//   }
-// }
-
-// live text update
-textInput.addEventListener("input", () => {
-  if (selectedElement && selectedElement.classList.contains("text")) {
-    selectedElement.textContent = textInput.value;
-  }
-});
-
-// helper: rgb() → hex
-function rgbToHex(rgb) {
-  if (!rgb.startsWith("rgb")) return rgb;
-
-  const nums = rgb.match(/\d+/g).map(Number);
-  return "#" + nums.map((n) => n.toString(16).padStart(2, "0")).join("");
-}
-
 const propHeading = document.getElementById("prop-heading");
 
+// We use specific selectors to differentiate between the two color inputs
+const [heightInput, widthInput] = document.querySelectorAll(".properties input[type='number']");
+const [bgInput, textColorInput] = document.querySelectorAll(".properties input[type='color']");
+const textInput = document.querySelector("#content input");
+
+// Select the "Wrappers" (parents) so we can hide the whole row (Label + Input)
+const bgWrapper = bgInput.closest(".pNames");         // Wrapper for Background Color
+const textColorWrapper = textColorInput.closest(".pNames"); // Wrapper for Text Color
+const textContentWrapper = document.getElementById("content"); // Wrapper for Text Content
+
+
+//Main Update Function
 function updatePropertiesPanel(el) {
+  
   if (!el) {
     propHeading.textContent = "No element selected";
+    
+    // Clear values
     heightInput.value = "";
     widthInput.value = "";
-    bgInput.value = "";
+    bgInput.value = "#ffffff";
+    textColorInput.value = "#000000";
     textInput.value = "";
+    
+    // Hide property rows
+    bgWrapper.style.display = "none";
+    textColorWrapper.style.display = "none";
     textContentWrapper.style.display = "none";
     return;
   }
-  console.log("Properties updated for", el?.id);
 
-  // inputs sync
-  widthInput.value = parseInt(el.style.width) || "";
-  heightInput.value = parseInt(el.style.height) || "";
+  
+  
+  // Get computed styles (handles CSS classes vs inline styles)
+  const computed = window.getComputedStyle(el);
 
-  const bg = el.style.backgroundColor;
-  bgInput.value = bg && bg !== "transparent" ? rgbToHex(bg) : "#ffffff";
+  // Common Values (Width/Height exist for everyone)
+  widthInput.value = parseInt(el.style.width) || parseInt(computed.width);
+  heightInput.value = parseInt(el.style.height) || parseInt(computed.height);
 
-  // heading text
+  // --- Toggle Inputs based on Type ---
+  
   if (el.classList.contains("text")) {
-    propHeading.textContent = `${el.id} | W:${widthInput.value}px H:${heightInput.value}px | Color:${el.style.color}`;
-    textContentWrapper.style.display = "block";
-    textInput.value = el.textContent;
+      // === TEXT SELECTED ===
+      propHeading.textContent = "Text Layer";
+      
+      bgWrapper.style.display = "none"; 
+      textColorWrapper.style.display = "flex";
+      textContentWrapper.style.display = "block"; // or flex depending on your CSS
+
+      // Sync Values
+      textColorInput.value = rgbToHex(el.style.color || computed.color);
+      textInput.value = el.textContent;
+
   } else {
-    propHeading.textContent = `${el.id} | W:${widthInput.value}px H:${heightInput.value}px | BG:${bgInput.value}`;
-    textContentWrapper.style.display = "none";
+      // === SHAPE SELECTED (Rect, Circle) ===
+      propHeading.textContent = el.classList.contains("circle") ? "Circle Layer" : "Rectangle Layer";
+      
+      
+      bgWrapper.style.display = "flex";
+      textColorWrapper.style.display = "none";
+      textContentWrapper.style.display = "none";
+
+      // Sync Values
+      const bg = el.style.backgroundColor || computed.backgroundColor;
+      bgInput.value = rgbToHex(bg);
+  }
+  
+  // Special Case for LINE 
+  if (el.dataset.type === "line") {
+      propHeading.textContent = "Line Element";
+      bgWrapper.style.display = "flex"; // We use BG color input to control line stroke color
+      textColorWrapper.style.display = "none";
+      textContentWrapper.style.display = "none";
+      
+      // Sync Line Color
+      const bg = el.style.backgroundColor || computed.backgroundColor;
+      bgInput.value = rgbToHex(bg);
   }
 }
 
+
+// 4. Event Listeners (Two-way Binding)
+
+heightInput.addEventListener("input", () => {
+  if (selectedElement) {
+      selectedElement.style.height = heightInput.value + "px";
+      saveLayout();
+  }
+});
+
+widthInput.addEventListener("input", () => {
+  if (selectedElement) {
+      selectedElement.style.width = widthInput.value + "px";
+      saveLayout();
+  }
+});
+
+bgInput.addEventListener("input", () => {
+  if (!selectedElement) return;
+  // Apply background color
+  selectedElement.style.backgroundColor = bgInput.value;
+  saveLayout();
+});
+
+textColorInput.addEventListener("input", () => {
+  if (!selectedElement) return;
+  // Apply text color
+  selectedElement.style.color = textColorInput.value;
+  saveLayout();
+});
+
+textInput.addEventListener("input", () => {
+  if (selectedElement && selectedElement.classList.contains("text")) {
+    selectedElement.textContent = textInput.value;
+    saveLayout();
+  }
+});
+
+// Helper Function
+function rgbToHex(rgb) {
+  if (!rgb || rgb === "transparent") return "#ffffff";
+  if (rgb.startsWith("#")) return rgb;
+  
+  const nums = rgb.match(/\d+/g);
+  if (!nums) return "#000000";
+  
+  const r = parseInt(nums[0]).toString(16).padStart(2, "0");
+  const g = parseInt(nums[1]).toString(16).padStart(2, "0");
+  const b = parseInt(nums[2]).toString(16).padStart(2, "0");
+  return `#${r}${g}${b}`;
+}
 //=============6)Keyboard Interactions =============================
 
 document.addEventListener("keydown", (e) => {
   if (!selectedElement) return;
-
+  if (selectedElement.isContentEditable) {
+      return;
+    }
   const canvasRect = canvas.getBoundingClientRect();
   const elRect = selectedElement.getBoundingClientRect();
 
@@ -645,6 +674,25 @@ function loadLayout() {
       el.textContent = data.text || "";
       el.contentEditable = "plaintext-only";
       el.tabIndex = 0;
+
+      // 1. Restore editing capability for loaded items
+      el.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
+        el.contentEditable = "true";
+        el.focus();
+      });
+      el.addEventListener("blur", () => {
+        el.contentEditable = "false";
+      });
+
+      // 2. Add the sync listener
+      el.addEventListener("input", () => {
+        if (selectedElement === el) {
+           const propInput = document.querySelector("#content input");
+           if (propInput) propInput.value = el.textContent;
+        }
+      });
+    
     }
 
     el.addEventListener("click", (e) => {
